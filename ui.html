@@ -1,0 +1,164 @@
+<style>
+  body {
+    font-family: system-ui, inter, roboto, sans-serif;
+    font-size: 18px;
+    color: #333;
+  }
+  label {
+    display: block;
+  }
+  .subtitle {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+  input {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+  }
+  button {
+    background: none;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 0.7em;
+    outline: none;
+    box-shadow: none;
+  }
+  .primary-btn {
+    background: #18a0fb;
+    color: #fff;
+    border-color: #18a0fb;
+  }
+  .secondary-btn {
+    color: #333;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+</style>
+<label>
+  <div class="subtitle">Share URL</div>
+  <input
+    id="url"
+    type="text"
+    value="https://airtable.com/shrlFq2jSymesUYW3/tblfPZxMSWxyUUpUY"
+    placeholder="https://airtable.com/shr..."
+  />
+</label>
+<label>
+  <div class="subtitle">Limit</div>
+  <input id="limit" type="number" placeholder="Maximum aantal rijen" />
+</label>
+<label>
+  <div class="subtitle">Filter</div>
+  <input id="app" type="text" placeholder="Example: {Name}='Figma'" />
+</label>
+<button id="create" class="primary-btn">Create</button>
+<button id="debug" lass="secondary-btn">Debug</button>
+<script>
+  document.getElementById('create').onclick = async () => {
+    const { data } = await scrape(value('#url'))
+    console.log('data', data)
+    const rows = data.rows.map(row => {
+      const out = {}
+      data.columns.forEach(col => {
+        out[col.name] = row.cellValuesByColumnId[col.id] || ''
+      })
+      return out
+    })
+    parent.postMessage(
+      { pluginMessage: { type: 'airtable-test', data: rows } },
+      '*'
+    )
+  }
+
+  document.getElementById('debug').onclick = () => {
+    parent.postMessage({ pluginMessage: { type: 'debug' } }, '*')
+  }
+
+  function value(elem) {
+    if (typeof elem === 'string') {
+      elem = document.querySelector(elem)
+    }
+    if (elem.tagName === 'SELECT') {
+      return elem.options[elem.selectedIndex].value
+    }
+    if (elem.tagName === 'INPUT') {
+      return elem.value
+    }
+    throw new Error('not implemented')
+  }
+
+  function get(argument) {
+    var request = new XMLHttpRequest()
+    request.open('GET')
+    request.responseType = 'text'
+    request.onload = () => {
+      window.parent.postMessage({ pluginMessage: request.response }, '*')
+    }
+    request.send()
+  }
+
+  async function select(env, tableName, filter) {
+    env.log && env.log('select', tableName, filter)
+    const body = await fetch(
+      appBase(env.app) + tableName + '?' + serialize(filter),
+      {
+        headers: headers(env.key),
+      }
+    ).then(r => r.json())
+    const { records } = body
+    if (records) {
+      return records.map(unpack)
+    }
+    console.error(body)
+    return []
+  }
+
+  function appBase(app) {
+    return 'https://api.airtable.com/v0/' + app + '/'
+  }
+
+  function headers(key) {
+    if (!key) {
+      throw new Error('AIRTABLE_API_KEY is a required env variable')
+    }
+    return {
+      Authorization: 'Bearer ' + key,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  }
+
+  function serialize(obj) {
+    const str = []
+    for (const p in obj) {
+      if (obj.hasOwnProperty(p) && obj[p]) {
+        str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]))
+      }
+    }
+    return str.join('&')
+  }
+  function unpack({ id: _id, fields, createdTime }) {
+    return Object.assign(
+      {
+        _id,
+        createdTime,
+      },
+      fields
+    )
+  }
+
+  function scrape(url) {
+    return fetch(
+      'https://airtable-shr.glitch.me/api?' +
+        serialize({
+          url,
+        })
+    ).then(r => r.json())
+  }
+</script>
