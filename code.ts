@@ -1,6 +1,7 @@
 const SPACING = 20
 console.log(this, figma)
 figma.showUI(__html__, {
+  width: 400,
   height: 233
 })
 

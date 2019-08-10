@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const SPACING = 20;
 console.log(this, figma);
 figma.showUI(__html__, {
+    width: 400,
     height: 233
 });
 figma.ui.onmessage = (msg) => __awaiter(this, void 0, void 0, function* () {
