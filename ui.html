@@ -7,28 +7,34 @@
   label {
     display: block;
   }
-  .subtitle {
-    font-weight: 600;
-    margin-bottom: 5px;
-    font-size: 11px;
-  }
   input {
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    margin-bottom: 15px;
     width: 100%;
     box-sizing: border-box;
-    outline: none;
-  }
-  button {
-    background: none;
+    padding: 10px 6px;
+    border-radius: 3px;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    margin-bottom: 15px;
+    outline: none;
+    transition: border 300ms;
+  }
+  input:focus {
+    border-color: #18a0fb;
+    transition: none;
+  }
+  .subtitle {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+
+  button {
     padding: 10px 20px;
+    border-radius: 3px;
     font-size: 0.7em;
     outline: none;
     box-shadow: none;
+    border-style: solid;
+    border-width: 1px;
   }
   .primary-btn {
     background: #18a0fb;
@@ -38,6 +44,10 @@
   .secondary-btn {
     color: #333;
     border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  #buttons {
+    display: block;
   }
 </style>
 <label>
@@ -49,16 +59,18 @@
     placeholder="https://airtable.com/shr..."
   />
 </label>
-<label>
+<label style="display:none">
   <div class="subtitle">Limit</div>
-  <input id="limit" type="number" placeholder="Maximum aantal rijen" />
+  <input id="limit" type="number" placeholder="Max row count" />
 </label>
-<label>
+<label style="display:none">
   <div class="subtitle">Filter</div>
   <input id="app" type="text" placeholder="Example: {Name}='Figma'" />
 </label>
-<button id="create" class="primary-btn">Create</button>
-<button id="debug" lass="secondary-btn">Debug</button>
+<span id="buttons">
+  <button id="create" class="primary-btn">Create</button>
+  <button id="debug" lass="secondary-btn">Debug</button>
+</span>
 <script>
   document.getElementById('create').onclick = async () => {
     const { data } = await scrape(value('#url'))
