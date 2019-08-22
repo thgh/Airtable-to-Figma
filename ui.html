@@ -57,9 +57,20 @@
     color: #333;
     border-color: rgba(0, 0, 0, 0.1);
   }
+  label > .left {
+    float: left;
+    width: 180px;
+    line-height: 38px;
+  }
+  label > .left + select {
+    display: block;
+    margin-left: 180px;
+    margin-bottom: 5px;
+    width: 188px;
+  }
 
   .footer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     right: 0;
     padding: 16px;
@@ -80,9 +91,10 @@
   .step.active {
     display: block;
   }
-  .step-loading {
+  .step-msg {
     line-height: 200px;
     text-align: center;
+    font-size: 15px;
   }
 </style>
 <form class="step step-url active">
@@ -125,12 +137,24 @@
     </button>
   </span>
 </form>
-<div class="step step-loading">
+<div class="step step-msg step-loading">
   Reading data from Airtable
 </div>
-<div class="step step-fields">
+<div class="step step-msg step-empty"></div>
+<form class="step step-fields">
   <h2>Columns</h2>
   <div id="fields"></div>
+  <span class="footer">
+    <button type="submit" id="configure" class="primary-btn">
+      Confirm configuration
+    </button>
+  </span>
+</form>
+<div class="step step-msg step-select">
+  Select a component
+</div>
+<div class="step step-msg step-texts">
+  Selection must contain at least 1 <b>TEXT</b> layer
 </div>
 <div class="step step-filter">
   <label>
@@ -145,10 +169,10 @@
 <script>
   //<button id="debug" lass="secondary-btn">Debug</button>
   let data = {}
+  let selection, texts
   document.querySelector('.step-url').onsubmit = async evt => {
     evt.preventDefault()
-    document.querySelector('.step.active').classList.remove('active')
-    document.querySelector('.step-loading').classList.add('active')
+    toStep('loading')
 
     const d = await scrape(value('#url'))
     data = d.data
@@ -160,36 +184,34 @@
       })
       return out
     })
-    const options = '<option>---</option>'
-    document.querySelector('#fields').innerHTML = data.columns
+    toStep('empty')
+
+    await syncSelection()
+    if (!selection || !selection.length) {
+      return msg('select', 'url')
+    }
+    if (!texts || !texts.length) {
+      return msg('texts', 'url')
+    }
+
+    const options = data.columns
+      .map(col => `<option>${col.name}</option>`)
+      .join('')
+    document.querySelector('#fields').innerHTML = texts
       .map(
-        col => `<label><h2>${col.name}</h2><select>${options}</select></label>`
+        text =>
+          `<label><div class="left">${text.name}</div><select><option selected>--- Select an Airtable field ---</option>${options}</select></label>`
       )
       .join('')
 
-    document.querySelector('.step.active').classList.remove('active')
-    document.querySelector('.step-fields').classList.add('active')
+    toStep('fields')
   }
 
   document.querySelector('.step-fields').onsubmit = async evt => {
     evt.preventDefault()
-    document.querySelector('.step.active').classList.remove('active')
-    document.querySelector('.step-loading').classList.add('active')
-
-    const { data } = await scrape(value('#url'))
-    console.log('data', data)
-    const rows = data.rows.map(row => {
-      const out = {}
-      data.columns.forEach(col => {
-        out[col.name] = row.cellValuesByColumnId[col.id] || ''
-      })
-      return out
-    })
-    document.querySelector('.step.active').classList.remove('active')
-    document.querySelector('.step-fields').classList.add('active')
-
+    msg('empty', 'url')
     parent.postMessage(
-      { pluginMessage: { type: 'airtable-test', data: rows } },
+      { pluginMessage: { type: 'airtable-load', data: rows } },
       '*'
     )
   }
@@ -201,6 +223,19 @@
   document.querySelector('#log').onclick = () => {
     parent.postMessage({ pluginMessage: { type: 'debug' } }, '*')
   }
+
+  /* Boot */
+
+  window.addEventListener('message', evt => {
+    if (evt.data.selection) {
+      selection = evt.data.selection
+    }
+    if (evt.data.texts) {
+      texts = evt.data.texts
+    }
+    console.log('selection', evt.data.selection)
+  })
+  parent.postMessage({ pluginMessage: 'get-selection-texts' }, '*')
 
   function value(elem) {
     if (typeof elem === 'string') {
@@ -251,5 +286,25 @@
         return value
       }
     } catch (e) {}
+  }
+
+  function msg(id, after) {
+    toStep(id)
+    setTimeout(() => {
+      toStep(after || 'fields')
+    }, 3000)
+  }
+
+  function toStep(id) {
+    const elem = document.querySelector('.step.active')
+    elem && elem.classList.remove('active')
+    document.querySelector('.step-' + id).classList.add('active')
+  }
+
+  function syncSelection() {
+    return new Promise(res => {
+      parent.postMessage({ pluginMessage: 'get-selection-texts' }, '*')
+      setTimeout(res, 200)
+    })
   }
 </script>
