@@ -1,11 +1,11 @@
 {
   "name": "figma-plugin-airtable",
-  "version": "1.0.0",
-  "description": "This plugin template uses Typescript. If you are familiar with Javascript, Typescript will look very familiar. In fact, valid Javascript code is already valid Typescript code.",
+  "version": "0.1.0",
+  "description": "Load Airtable data in a component",
   "main": "code.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsc -w"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Thomas Ghysels <info@thomasg.be>",
+  "license": "UNLICENSED"
 }

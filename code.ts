@@ -1,17 +1,17 @@
 const SPACING = 20
-console.log(this, figma)
+//console.log(this, figma)
 figma.showUI(__html__, {
   width: 400,
   height: 233,
 })
 
 figma.ui.onmessage = async msg => {
+  console.log(msg)
   if (msg.type === 'debug') {
     console.log(figma.currentPage.selection)
     return
   }
   if (msg === 'get-selection-texts' || msg.type === 'get-selection-texts') {
-    console.log(figma.currentPage.selection)
     figma.ui.postMessage({
       type: 'selection',
       selection: figma.currentPage.selection,
@@ -20,43 +20,48 @@ figma.ui.onmessage = async msg => {
       type: 'selection-texts',
       texts: getTexts(figma.currentPage.selection),
     })
+    detectConfig()
     return
   }
-  if (msg.type === 'airtable-test') {
+  if (msg.type === 'airtable-load') {
+    const { data, mapping } = msg
+    const lookup = getArrayMapping(figma.currentPage.selection[0], mapping)
     const instance = getFrame(figma.currentPage.selection[0])
     if (!instance) {
       return console.warn('no frame')
     }
 
-    const { data } = msg
     console.warn('data', data)
     if (!data) {
       return console.warn('no data')
     }
     await figma.loadFontAsync({ family: 'Roboto', style: 'Regular' })
 
+    console.log('lo', lookup)
     const parent = instance.parent
-    const nodes = []
-    nodes.push(instance)
-    let offset = instance.y + instance.height + SPACING
+    const focus = []
+    focus.push(instance)
+    let offset = instance.y
+    let first = true
     for (const rowData of data) {
-      const clone = instance.clone()
+      const clone = first ? instance : instance.clone()
+      first = false
 
       const subs = clone.findAll(() => true)
       console.log('subs', subs)
-      subs.forEach(sub => interpolate(sub, rowData))
+      subs.forEach((sub, i) => interpolate(sub, rowData[lookup[i]]))
 
       parent.appendChild(clone)
       clone.y = offset
-      offset += instance.height + 24
+      offset += instance.height + SPACING
 
-      nodes.push(clone)
+      focus.push(clone)
     }
     // TODO: saved
 
     // Update selection
-    figma.currentPage.selection = nodes
-    figma.viewport.scrollAndZoomIntoView(nodes)
+    figma.currentPage.selection = focus
+    figma.viewport.scrollAndZoomIntoView(focus)
   }
 
   // Make sure to close the plugin when you're done. Otherwise the plugin will
@@ -64,10 +69,21 @@ figma.ui.onmessage = async msg => {
   figma.closePlugin()
 }
 
-function interpolate(node, data) {
-  if (node.type === 'TEXT') {
-    node.characters = templateHash(node.characters, data)
+function getArrayMapping(instance, mapping) {
+  return instance
+    .findAll(() => true)
+    .map(node => mapping.find(n => n.id === node.id))
+    .map(f => f && f.field)
+}
+
+function interpolate(node, value) {
+  if (value) {
+    node.characters = value
+    return
   }
+  // if (node.type === 'TEXT') {
+  //   node.characters = templateHash(node.characters, row)
+  // }
 }
 
 function templateHash(text, data) {
@@ -106,19 +122,25 @@ function getFrame(instance) {
 
   if (
     !instance ||
-    (instance.type !== 'INSTANCE' && instance.type !== 'FRAME')
+    (instance.type !== 'INSTANCE' &&
+      instance.type !== 'FRAME' &&
+      instance.type !== 'COMPONENT')
   ) {
     return console.warn('no instance')
   }
   return instance
 }
 
-function getTexts (layer) {
+function getTexts(layer) {
   if (!layer) return []
   const texts = []
   traverse(layer, layer => {
     if (layer.type === 'TEXT') {
-      texts.push(layer)
+      texts.push({
+        id: layer.id,
+        name: layer.name,
+        characters: layer.characters,
+      })
     }
   })
   return texts
@@ -136,3 +158,8 @@ function traverse(node, func) {
   }
 }
 
+function detectConfig() {
+  // To implement
+  // Read selection metadata
+  // post metadata to plugin
+}

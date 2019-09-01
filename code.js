@@ -7,54 +7,81 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const SPACING = 20;
-console.log(this, figma);
+//console.log(this, figma)
 figma.showUI(__html__, {
     width: 400,
-    height: 233
+    height: 233,
 });
 figma.ui.onmessage = (msg) => __awaiter(this, void 0, void 0, function* () {
+    console.log(msg);
     if (msg.type === 'debug') {
         console.log(figma.currentPage.selection);
         return;
     }
-    if (msg.type === 'airtable-test') {
+    if (msg === 'get-selection-texts' || msg.type === 'get-selection-texts') {
+        figma.ui.postMessage({
+            type: 'selection',
+            selection: figma.currentPage.selection,
+        });
+        figma.ui.postMessage({
+            type: 'selection-texts',
+            texts: getTexts(figma.currentPage.selection),
+        });
+        detectConfig();
+        return;
+    }
+    if (msg.type === 'airtable-load') {
+        const { data, mapping } = msg;
+        const lookup = getArrayMapping(figma.currentPage.selection[0], mapping);
         const instance = getFrame(figma.currentPage.selection[0]);
         if (!instance) {
             return console.warn('no frame');
         }
-        const { data } = msg;
         console.warn('data', data);
         if (!data) {
             return console.warn('no data');
         }
         yield figma.loadFontAsync({ family: 'Roboto', style: 'Regular' });
+        console.log('lo', lookup);
         const parent = instance.parent;
-        const nodes = [];
-        nodes.push(instance);
-        let offset = instance.y + instance.height + SPACING;
+        const focus = [];
+        focus.push(instance);
+        let offset = instance.y;
+        let first = true;
         for (const rowData of data) {
-            const clone = instance.clone();
+            const clone = first ? instance : instance.clone();
+            first = false;
             const subs = clone.findAll(() => true);
             console.log('subs', subs);
-            subs.forEach(sub => interpolate(sub, rowData));
+            subs.forEach((sub, i) => interpolate(sub, rowData[lookup[i]]));
             parent.appendChild(clone);
             clone.y = offset;
-            offset += instance.height + 24;
-            nodes.push(clone);
+            offset += instance.height + SPACING;
+            focus.push(clone);
         }
         // TODO: saved
         // Update selection
-        figma.currentPage.selection = nodes;
-        figma.viewport.scrollAndZoomIntoView(nodes);
+        figma.currentPage.selection = focus;
+        figma.viewport.scrollAndZoomIntoView(focus);
     }
     // Make sure to close the plugin when you're done. Otherwise the plugin will
     // keep running, which shows the cancel button at the bottom of the screen.
     figma.closePlugin();
 });
-function interpolate(node, data) {
-    if (node.type === 'TEXT') {
-        node.characters = templateHash(node.characters, data);
+function getArrayMapping(instance, mapping) {
+    return instance
+        .findAll(() => true)
+        .map(node => mapping.find(n => n.id === node.id))
+        .map(f => f && f.field);
+}
+function interpolate(node, value) {
+    if (value) {
+        node.characters = value;
+        return;
     }
+    // if (node.type === 'TEXT') {
+    //   node.characters = templateHash(node.characters, row)
+    // }
 }
 function templateHash(text, data) {
     if (data) {
@@ -84,24 +111,42 @@ function getFrame(instance) {
         instance.x = parent.x + parent.width + SPACING;
         instance.y = parent.y;
     }
-    if (!instance || (instance.type !== 'INSTANCE' && instance.type !== 'FRAME')) {
+    if (!instance ||
+        (instance.type !== 'INSTANCE' &&
+            instance.type !== 'FRAME' &&
+            instance.type !== 'COMPONENT')) {
         return console.warn('no instance');
     }
     return instance;
 }
-// await figma.loadFontAsync({ family: 'Roboto', style: 'Regular' })
-// const rect = figma.createRectangle()
-// rect.resize(500, 1000)
-// rect.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }]
-// const text = figma.createText()
-// text.resize(500, 1000)
-// text.characters = JSON.stringify(
-//   figma.currentPage.selection || data,
-//   null,
-//   2
-// )
-// const frame = figma.createFrame()
-// frame.resize(500, 1000)
-// frame.appendChild(rect)
-// frame.appendChild(text)
-// figma.currentPage.appendChild(frame)
+function getTexts(layer) {
+    if (!layer)
+        return [];
+    const texts = [];
+    traverse(layer, layer => {
+        if (layer.type === 'TEXT') {
+            texts.push({
+                id: layer.id,
+                name: layer.name,
+                characters: layer.characters,
+            });
+        }
+    });
+    return texts;
+}
+function traverse(node, func) {
+    if (Array.isArray(node)) {
+        return node.map(n => traverse(n, func));
+    }
+    func(node);
+    if ('children' in node) {
+        for (const child of node.children) {
+            traverse(child, func);
+        }
+    }
+}
+function detectConfig() {
+    // To implement
+    // Read selection metadata
+    // post metadata to plugin
+}

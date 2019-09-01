@@ -151,7 +151,7 @@
   </span>
 </form>
 <div class="step step-msg step-select">
-  Select a component
+  Select a component or a frame
 </div>
 <div class="step step-msg step-texts">
   Selection must contain at least 1 <b>TEXT</b> layer
@@ -200,7 +200,7 @@
     document.querySelector('#fields').innerHTML = texts
       .map(
         text =>
-          `<label><div class="left">${text.name}</div><select><option selected>--- Select an Airtable field ---</option>${options}</select></label>`
+          `<label><div class="left">${text.name}</div><select><option value="" selected>--- Select an Airtable field ---</option>${options}</select></label>`
       )
       .join('')
 
@@ -209,9 +209,26 @@
 
   document.querySelector('.step-fields').onsubmit = async evt => {
     evt.preventDefault()
+
+    const values = [...document.querySelectorAll('#fields select')].map(value)
+
+    const mapping = texts
+      .map((t, i) => ({
+        id: t.id,
+        field: values[i],
+      }))
+      .filter(t => t.field)
+
     msg('empty', 'url')
     parent.postMessage(
-      { pluginMessage: { type: 'airtable-load', data: rows } },
+      {
+        pluginMessage: {
+          type: 'airtable-load',
+          mapping,
+          airtableURL: value('#url'),
+          data: rows,
+        },
+      },
       '*'
     )
   }
@@ -227,13 +244,14 @@
   /* Boot */
 
   window.addEventListener('message', evt => {
-    if (evt.data.selection) {
-      selection = evt.data.selection
+    const data = evt.data.pluginMessage
+    console.log('ui received', data)
+    if (data.selection) {
+      selection = data.selection
     }
-    if (evt.data.texts) {
-      texts = evt.data.texts
+    if (data.texts) {
+      texts = data.texts
     }
-    console.log('selection', evt.data.selection)
   })
   parent.postMessage({ pluginMessage: 'get-selection-texts' }, '*')
 
