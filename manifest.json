@@ -1,7 +1,7 @@
 {
-  "name": "Airtable",
+  "name": "Airtable to Figma",
   "id": "741940457537193498",
-  "api": "0.1.0",
+  "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html"
 }

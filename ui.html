@@ -1,83 +1,77 @@
 <style>
+  .d-inline {
+    display: inline-block;
+    max-width: 50px;
+  }
+  .icon--button {
+    background: none;
+  }
+  .icon--button:hover {
+    transform: translateZ(0);
+  }
+  .icon--selected {
+    position: relative;
+    z-index: 1000;
+  }
+  .row {
+    display: block;
+    overflow: auto;
+  }
+  .col {
+    float: left;
+    width: 50%;
+  }
+  .row.field > .col {
+    padding: 8px;
+    line-height: 18px;
+  }
+  .field select {
+    display: block;
+    max-width: 100%;
+  }
+  .step-fields {
+    padding-bottom: 100px;
+  }
+  .label {
+    margin-top: -1em;
+  }
+</style>
+<link
+  rel="stylesheet"
+  href="https://thomas-lowry.github.io/figma-plugin-ds/css/figma-plugin-ds.min.css"
+/>
+
+<style>
   body {
     font-family: Inter, system-ui, roboto, sans-serif;
-    color: #333;
-    margin: 0;
-    padding: 16px;
     font-size: 11px;
   }
-  label {
-    display: block;
+  [v-cloak] {
+    display: none;
   }
-  h2 {
-    font-weight: 600;
-    margin-top: 0;
-    margin-bottom: 8px;
-    font-size: 11px;
-  }
-  select,
-  input {
-    font: inherit;
-    width: 100%;
-    box-sizing: border-box;
-    line-height: 16px;
-    height: 38px;
-    background: white;
-    padding: 10px 6px;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    margin-bottom: 15px;
-    outline: none;
-    transition: border 300ms;
-  }
-  select:focus,
-  input:focus {
-    border-color: #18a0fb;
-    transition: none;
-  }
-  laabel:focus-within h2 {
-    color: #18a0fb;
-  }
-
-  button {
-    padding: 10px 20px;
-    border-radius: 3px;
-    font: inherit;
-    outline: none;
-    box-shadow: none;
-    border-style: solid;
-    border-width: 1px;
-  }
-  .primary-btn {
-    background: #18a0fb;
-    color: #fff;
-    border-color: #18a0fb;
-  }
-  .secondary-btn {
-    color: #333;
-    border-color: rgba(0, 0, 0, 0.1);
-  }
-  label > .left {
-    float: left;
-    width: 180px;
-    line-height: 38px;
+  .grid {
+    overflow: auto;
+    padding: 0 8px 8px;
   }
   label > .left + select {
     display: block;
-    margin-left: 180px;
-    margin-bottom: 5px;
-    width: 188px;
+    margin: 0 0 0 180px;
+    width: 180px;
   }
 
   .footer {
     position: fixed;
     bottom: 0;
     right: 0;
+    left: auto;
     padding: 16px;
-    display: block;
+  }
+  .footer .btn + .btn {
+    margin-left: 10px;
   }
   ol {
-    padding-left: 14px;
+    margin-top: 0;
+    padding-left: 20px;
   }
   li {
     line-height: 18px;
@@ -85,191 +79,514 @@
   svg {
     vertical-align: top;
   }
-  .step {
-    display: none;
-  }
-  .step.active {
-    display: block;
-  }
   .step-msg {
     line-height: 200px;
     text-align: center;
     font-size: 15px;
   }
 </style>
-<form class="step step-url active">
-  <h2 id="log">Get started</h2>
-  <ol>
-    <li>
-      Click
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        class="flex-none"
-        style="shape-rendering: geometricprecision;"
+
+<div id="app" v-cloak>
+  <div class="step step-msg step-loading" v-if="selection.loading">
+    Select a component or a frame
+  </div>
+  <div class="step step-msg step-loading" v-if="step === 'loading'">
+    Reading data from Airtable
+  </div>
+  <div
+    class="step step-msg step-select"
+    v-else-if="!selection.length"
+    @click="checkSelection"
+  >
+    Select a component or a frame and click here
+  </div>
+  <div class="step step-msg step-texts" v-else-if="!texts.length">
+    Selection must contain at least 1 <b>TEXT</b> layer
+  </div>
+  <form
+    class="step step-fields"
+    v-else-if="data.columns.length && !mappingConfirmed && !changeLink"
+    @submit.prevent="apply"
+  >
+    <div class="row">
+      <div class="col">
+        <div class="section-title">Text node</div>
+      </div>
+      <div class="col">
+        <div class="section-title">Airtable field</div>
+      </div>
+    </div>
+    <label class="row field" v-for="text in config.mapping">
+      <div class="col">
+        <div class="node-name">{{text.name}}</div>
+      </div>
+      <div class="col">
+        <select class="" v-model="text.airtableField">
+          <option value="" selected>--- Select an Airtable field ---</option>
+          <option v-for="col in textColumns">{{col.name}}</option>
+        </select>
+      </div>
+    </label>
+    <div v-if="imageColumns.length && config.images && config.images.length">
+      <div class="row">
+        <div class="col">
+          <div class="section-title">Image node</div>
+        </div>
+        <div class="col">
+          <div class="section-title">Airtable field</div>
+        </div>
+      </div>
+      <label class="row field" v-for="text in config.images">
+        <div class="col">
+          <div class="node-name">{{text.name}}</div>
+        </div>
+        <div class="col">
+          <select class="" v-model="text.airtableField">
+            <option value="" selected>--- Select an Airtable field ---</option>
+            <option v-for="col in imageColumns">{{col.name}}</option>
+          </select>
+        </div>
+      </label>
+    </div>
+    <div class="footer">
+      <button
+        type="button"
+        class="button button--secondary"
+        @click.prevent="changeLink = true"
       >
-        <path
-          fill-rule="evenodd"
-          class=""
-          fill="currentColor"
-          d="M4.0338962,12 C4.039975,12 4.04202029,11.999381 4.04264508,12 L4.0338962,12 Z M12,9.5 C12,8.94771525 12.4477153,8.5 13,8.5 C13.5522847,8.5 14,8.94771525 14,9.5 L14,12.0064025 C14,13.0966041 13.1067329,14 12.0088582,14 L4.0338962,14 C2.94133314,14 2.04275439,13.1037881 2.04275439,12.0046024 L2.04275439,3.99539757 C2.04275439,2.90017343 2.94191902,2 4.04394285,2 L6,2 C6.55228475,2 7,2.44771525 7,3 C7,3.55228475 6.55228475,4 6,4 C6,4 4.04275439,4.00424121 4.04275439,3.99539757 C4.04275439,3.99539757 4.04268791,12.0000424 4.04264508,12 C4.04264508,12 12.000729,11.9992535 12,12.0064025 L12,9.5 Z M11.3901883,5.99545798 L8.85626073,8.52938555 C8.38989727,8.99574901 7.63695194,8.99892824 7.16724666,8.52922296 C6.70079341,8.06276971 6.69741624,7.30987673 7.16708407,6.8402089 L9.70101165,4.30628132 L8.8486345,3.45390417 C8.39272337,2.99799304 8.54112219,2.54149221 9.19403103,2.44821952 L12.7417573,1.94140149 C13.3992922,1.84746792 13.8483408,2.30180353 13.7550681,2.95471237 L13.2482501,6.5024386 C13.1543165,7.15997357 12.7047171,7.30998673 12.2425655,6.84783513 L11.3901883,5.99545798 L11.3901883,5.99545798 Z"
-        ></path>
-      </svg>
-      in the Airtable view that contains your data.
-    </li>
-    <li>Create a shareable grid view link.</li>
-    <li id="exampleshr">Copy the link and paste it below.</li>
-  </ol>
-  <label>
-    <h2>Shared view link</h2>
-    <input
-      id="url"
-      type="text"
-      placeholder="https://airtable.com/shr..."
-      required
-    />
-  </label>
-  <span class="footer">
-    <button type="submit" id="load" class="primary-btn">
-      Load Airtable data
-    </button>
-  </span>
-</form>
-<div class="step step-msg step-loading">
-  Reading data from Airtable
+        Change link
+      </button>
+      <button
+        type="button"
+        class="button button--primary"
+        @click.prevent="mappingConfirmed = true"
+      >
+        Next
+      </button>
+    </div>
+  </form>
+  <form
+    class="step step-fields"
+    v-else-if="data.columns.length && !changeLink"
+    @submit.prevent="apply"
+  >
+    <div class="row">
+      <div class="col">
+        <div class="section-title">Direction</div>
+        <div class="grid">
+          <div class="d-inline">
+            <button
+              type="button"
+              @click="config.grid = ''"
+              class="icon icon--layout-grid-rows icon--button"
+              :class="{'icon--selected': !config.grid }"
+            />
+          </div>
+          <div class="d-inline">
+            <button
+              type="button"
+              @click="config.grid = 'columns'"
+              class="icon icon--layout-grid-columns icon--button"
+              :class="{'icon--selected': config.grid === 'columns' }"
+            />
+          </div>
+          <div class="d-inline">
+            <button
+              type="button"
+              @click="config.grid = 'grid'"
+              class="icon icon--layout-grid-uniform icon--button"
+              :class="{'icon--selected': config.grid === 'grid' }"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="col" v-if="config.grid === 'grid'">
+        <label>
+          <div class="section-title">Columns</div>
+          <input
+            type="number"
+            class="input"
+            v-model="config.columns"
+            placeholder="Default: 3"
+            min="1"
+            max="100"
+          />
+        </label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>
+          <div class="section-title">Spacing</div>
+          <input
+            type="number"
+            class="input"
+            v-model="config.spacing"
+            placeholder="Default: 20px"
+            min="0"
+            max="1000"
+          />
+        </label>
+      </div>
+      <div class="col">
+        <label>
+          <div class="section-title">Max items</div>
+          <input
+            type="number"
+            class="input"
+            v-model="config.limit"
+            placeholder="Default: 100 items"
+            min="1"
+            max="1000"
+          />
+        </label>
+      </div>
+    </div>
+    <div class="footer">
+      <button
+        type="button"
+        class="button button--secondary"
+        @click.prevent="mappingConfirmed = false"
+      >
+        Change field mapping
+      </button>
+      <button
+        type="button"
+        class="button button--primary"
+        @click.prevent="postMessage('close')"
+      >
+        Done
+      </button>
+    </div>
+  </form>
+  <form @submit.prevent="submitURL" v-else>
+    <div class="section-title">Get started</div>
+    <ol>
+      <li>
+        Click
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          class="flex-none"
+          style="shape-rendering: geometricprecision;"
+        >
+          <path
+            fill-rule="evenodd"
+            class=""
+            fill="currentColor"
+            d="M4.0338962,12 C4.039975,12 4.04202029,11.999381 4.04264508,12 L4.0338962,12 Z M12,9.5 C12,8.94771525 12.4477153,8.5 13,8.5 C13.5522847,8.5 14,8.94771525 14,9.5 L14,12.0064025 C14,13.0966041 13.1067329,14 12.0088582,14 L4.0338962,14 C2.94133314,14 2.04275439,13.1037881 2.04275439,12.0046024 L2.04275439,3.99539757 C2.04275439,2.90017343 2.94191902,2 4.04394285,2 L6,2 C6.55228475,2 7,2.44771525 7,3 C7,3.55228475 6.55228475,4 6,4 C6,4 4.04275439,4.00424121 4.04275439,3.99539757 C4.04275439,3.99539757 4.04268791,12.0000424 4.04264508,12 C4.04264508,12 12.000729,11.9992535 12,12.0064025 L12,9.5 Z M11.3901883,5.99545798 L8.85626073,8.52938555 C8.38989727,8.99574901 7.63695194,8.99892824 7.16724666,8.52922296 C6.70079341,8.06276971 6.69741624,7.30987673 7.16708407,6.8402089 L9.70101165,4.30628132 L8.8486345,3.45390417 C8.39272337,2.99799304 8.54112219,2.54149221 9.19403103,2.44821952 L12.7417573,1.94140149 C13.3992922,1.84746792 13.8483408,2.30180353 13.7550681,2.95471237 L13.2482501,6.5024386 C13.1543165,7.15997357 12.7047171,7.30998673 12.2425655,6.84783513 L11.3901883,5.99545798 L11.3901883,5.99545798 Z"
+          ></path>
+        </svg>
+        in the Airtable view that contains your data.
+      </li>
+      <li>Create a shareable grid view link.</li>
+      <li>Copy the link and paste it below.</li>
+    </ol>
+    <label>
+      <div class="section-title">Shared view link</div>
+      <input
+        class="input"
+        type="text"
+        v-model="url"
+        placeholder="https://airtable.com/shr..."
+        autofocus
+        required
+      />
+      <span class="label" v-if="data.url === url"
+        >Found {{data.rows.length}} rows and {{data.columns.length}}
+        columns</span
+      >
+    </label>
+    <div class="footer">
+      <button
+        type="button"
+        class="button button--secondary"
+        @click.prevent="url = 'https://airtable.com/shr0hyEnBae0AKKfQ'"
+      >
+        Example
+      </button>
+      &nbsp;
+      <button
+        type="submit"
+        class="button button--primary"
+        :disabled="!validURL"
+      >
+        Load Airtable data
+      </button>
+    </div>
+  </form>
 </div>
-<div class="step step-msg step-empty"></div>
-<form class="step step-fields">
-  <h2>Columns</h2>
-  <div id="fields"></div>
-  <span class="footer">
-    <button type="submit" id="configure" class="primary-btn">
-      Confirm configuration
-    </button>
-  </span>
-</form>
-<div class="step step-msg step-select">
-  Select a component or a frame
-</div>
-<div class="step step-msg step-texts">
-  Selection must contain at least 1 <b>TEXT</b> layer
-</div>
-<div class="step step-filter">
-  <label>
-    <h2>Limit</h2>
-    <input id="limit" type="number" placeholder="Max row count" />
-  </label>
-  <label>
-    <h2>Filter</h2>
-    <input id="app" type="text" placeholder="Example: {Name}='Figma'" />
-  </label>
-</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>
 <script>
-  //<button id="debug" lass="secondary-btn">Debug</button>
-  let data = {}
-  let selection, texts
-  document.querySelector('.step-url').onsubmit = async evt => {
-    evt.preventDefault()
-    toStep('loading')
-
-    const d = await scrape(value('#url'))
-    data = d.data
-    console.log('data', data)
-    rows = data.rows.map(row => {
-      const out = {}
-      data.columns.forEach(col => {
-        out[col.name] = row.cellValuesByColumnId[col.id] || ''
-      })
-      return out
-    })
-    toStep('empty')
-
-    await syncSelection()
-    if (!selection || !selection.length) {
-      return msg('select', 'url')
+  const emptyArray = []
+  const noData = { rows: emptyArray, columns: emptyArray, url: '' }
+  const render = debounce(async state => {
+    // console.log('render', state)
+    const ok = await requestMessage('renderAirtable', state)
+    if (ok === 'sync:selection') {
+      app.checkSelection(true)
     }
-    if (!texts || !texts.length) {
-      return msg('texts', 'url')
-    }
+    // console.log('rendered', ok)
+  }, 200)
+  const app = new Vue({
+    el: '#app',
+    data() {
+      return {
+        config: {
+          grid: '',
+          spacing: null,
+          limit: null,
+          columns: null,
+          mapping: emptyArray,
+          images: emptyArray,
+        },
+        mappingConfirmed: false,
+        changeLink: false,
+        data: noData,
+        selection: emptyArray,
+        step: '',
+        url: '',
+      }
+    },
+    computed: {
+      validURL() {
+        return this.url
+      },
+      texts() {
+        return (this.selection[0] && this.selection[0].texts) || emptyArray
+      },
+      textColumns() {
+        return this.data.columns.filter(col => !col.type.includes('ttachment'))
+      },
+      images() {
+        return (this.selection[0] && this.selection[0].images) || emptyArray
+      },
+      imageColumns() {
+        return this.data.columns.filter(col => col.type.includes('ttachment'))
+      },
+      rows() {
+        if (!this.data.rows) {
+          return emptyArray
+        }
+        return this.data.rows.map(row => {
+          const out = {}
+          this.data.columns.forEach(col => {
+            out[col.name] =
+              (row.cellValuesByColumnId && row.cellValuesByColumnId[col.id]) ||
+              ''
+          })
+          return out
+        })
+      },
+      state() {
+        return {
+          airtableConfig: this.config,
+          airtableLink: this.url,
+          airtableRows: this.rows,
+        }
+      },
+    },
+    methods: {
+      postMessage,
+      log() {
+        postMessage('debug')
+      },
+      async checkSelection(noConfig) {
+        this.selection = emptyArray
+        this.selection.loading = true
+        this.selection = await requestMessage('selection')
 
-    const options = data.columns
-      .map(col => `<option>${col.name}</option>`)
-      .join('')
-    document.querySelector('#fields').innerHTML = texts
-      .map(
-        text =>
-          `<label><div class="left">${text.name}</div><select><option value="" selected>--- Select an Airtable field ---</option>${options}</select></label>`
-      )
-      .join('')
+        if (noConfig) {
+          return
+        }
 
-    toStep('fields')
+        if (!this.selection.length && this.data.rows.length) {
+          console.log('selection no len')
+          this.data = noData
+          return
+        }
+
+        if (!this.texts.length && this.data.rows.length) {
+          console.log('selection no text')
+          this.data = noData
+          return
+        }
+
+        // Get URL
+        const withUrl = this.selection.find(s => s.airtableLink)
+        if (!withUrl) {
+          return
+        }
+        console.log('current airtableLink', withUrl.airtableLink)
+        this.url = withUrl.airtableLink
+
+        // Get data
+        const withData = this.selection.find(s => s.airtableData)
+        if (!withData) {
+          return
+        }
+        console.log(
+          'current airtableData rows',
+          withData.airtableData.rows.length
+        )
+        this.data = withData.airtableData
+
+        // Get data
+        const withConfig = this.selection.find(s => s.airtableConfig)
+        if (!withConfig) {
+          return
+        }
+        console.log('current airtableConfig', inert(withConfig.airtableConfig))
+        this.config = withConfig.airtableConfig
+      },
+      async submitURL() {
+        // Fetch data from API
+        this.step = 'loading'
+        this.changeLink = false
+        this.data = noData
+        const data = await scrape(this.url)
+        console.log('got', data.url)
+        this.step = ''
+        if (!data.rows.length) {
+          return notify('could not fetch data from Airtable')
+        }
+        if (!data.columns.length) {
+          return notify('could not fetch data from Airtable')
+        }
+
+        // Selection validation (deprecated?)
+        if (!this.selection.length) {
+          return msg('select', 'url')
+        }
+        const texts = this.selection[0].texts
+        if (!texts || !texts.length) {
+          return msg('texts', 'url')
+        }
+
+        // Prepare an empty mapping
+        this.data = data
+        this.config.mapping = inert(this.getMapping())
+        this.config.images = inert(this.getImages())
+
+        // Alright, let's remember for next time
+        requestMessage('saveAirtableLink', this.url)
+        requestMessage('saveAirtableData', this.data)
+        // document.querySelector('#fields').innerHTML = texts
+        //   .map(
+        //     text =>
+        //       `<label><div class="left">${text.name}</div><select><option value="" selected>--- Select an Airtable field ---</option>${options}</select></label>`
+        //   )
+        //   .join('')
+      },
+      async apply() {
+        const v = this.state
+        if (!v || !v.airtableLink || !v.airtableConfig.mapping.length) {
+          return
+        }
+
+        // debounced
+        render(v)
+      },
+      getMapping() {
+        if (
+          this.selection[0] &&
+          this.selection[0].airtableConfig &&
+          this.selection[0].airtableConfig.mapping
+        ) {
+          return this.selection[0].airtableConfig.mapping
+        }
+        return this.texts.map(t => {
+          t.airtableField = ''
+          return t
+        })
+      },
+      getImages() {
+        if (
+          this.selection[0] &&
+          this.selection[0].airtableConfig &&
+          this.selection[0].airtableConfig.images
+        ) {
+          return this.selection[0].airtableConfig.images
+        }
+        return this.images.map(t => {
+          t.airtableField = ''
+          return t
+        })
+      },
+    },
+    mounted() {
+      this.checkSelection()
+    },
+    watch: {
+      rows() {
+        this.apply()
+      },
+      config: {
+        deep: true,
+        handler(v) {
+          this.apply()
+        },
+      },
+    },
+  })
+
+  function notify(msg) {
+    postMessage('notify', msg)
   }
 
-  document.querySelector('.step-fields').onsubmit = async evt => {
-    evt.preventDefault()
+  function postMessage(type, data) {
+    const id = Math.random().toString(36)
+    window.parent.postMessage({ pluginMessage: { id, type, data } }, '*')
+    return id
+  }
 
-    const values = [...document.querySelectorAll('#fields select')].map(value)
-
-    const mapping = texts
-      .map((t, i) => ({
-        id: t.id,
-        field: values[i],
-      }))
-      .filter(t => t.field)
-
-    msg('empty', 'url')
-    parent.postMessage(
+  function requestMessage(type, data) {
+    return new Promise(resolve => {
+      const id = postMessage('request:' + type, JSON.stringify(data))
+      window.addEventListener('message', onmessage)
+      function onmessage(evt) {
+        const message = evt.data.pluginMessage
+        if (message && message.id === id) {
+          resolve(JSON.parse(message.data))
+          // console.log('response message', message, JSON.parse(message.data))
+          window.removeEventListener('message', onmessage)
+        }
+      }
+    })
+  }
+  function responseMessage(msg, data) {
+    window.parent.postMessage(
       {
         pluginMessage: {
-          type: 'airtable-load',
-          mapping,
-          airtableURL: value('#url'),
-          data: rows,
+          id: msg.id,
+          type: msg.type.replace('request:', 'response:'),
+          data: JSON.stringify(data),
         },
       },
       '*'
     )
   }
-
-  document.querySelector('#exampleshr').onclick = () => {
-    document.querySelector('#url').value =
-      'https://airtable.com/shrlFq2jSymesUYW3/tblfPZxMSWxyUUpUY'
+  function inert(data) {
+    return JSON.parse(JSON.stringify(data))
   }
-  document.querySelector('#log').onclick = () => {
-    parent.postMessage({ pluginMessage: { type: 'debug' } }, '*')
-  }
-
-  /* Boot */
-
-  window.addEventListener('message', evt => {
-    const data = evt.data.pluginMessage
-    console.log('ui received', data)
-    if (data.selection) {
-      selection = data.selection
+  function debounce(fn, wait) {
+    var timeout
+    return function() {
+      const args = arguments
+      clearTimeout(timeout)
+      timeout = setTimeout(function() {
+        fn.apply(this, args)
+      }, wait || 1)
     }
-    if (data.texts) {
-      texts = data.texts
-    }
-  })
-  parent.postMessage({ pluginMessage: 'get-selection-texts' }, '*')
-
-  function value(elem) {
-    if (typeof elem === 'string') {
-      elem = document.querySelector(elem)
-    }
-    if (elem.tagName === 'SELECT') {
-      return elem.options[elem.selectedIndex].value
-    }
-    if (elem.tagName === 'INPUT') {
-      return elem.value
-    }
-    throw new Error('not implemented')
   }
 
   function scrape(url) {
     if (ls(url)) {
+      console.log('localStorage scrape')
       return ls(url)
     }
     return fetch(
@@ -280,7 +597,21 @@
     )
       .then(r => r.json())
       .then(data => {
+        if (data && data.data) {
+          data = data.data
+        }
+        if (!data || !data.rows || !data.columns) {
+          return noData
+        }
         ls(url, data)
+        return data
+      })
+      .catch(e => {
+        e.message && notify(e.message)
+        return noData
+      })
+      .then(data => {
+        data.url = url
         return data
       })
   }
@@ -305,24 +636,28 @@
       }
     } catch (e) {}
   }
-
   function msg(id, after) {
-    toStep(id)
-    setTimeout(() => {
-      toStep(after || 'fields')
-    }, 3000)
+    alert(id)
   }
 
-  function toStep(id) {
-    const elem = document.querySelector('.step.active')
-    elem && elem.classList.remove('active')
-    document.querySelector('.step-' + id).classList.add('active')
+  imageDownloadService()
+
+  function imageDownloadService() {
+    window.addEventListener('message', onmessage)
+    async function onmessage(evt) {
+      const msg = evt.data.pluginMessage
+      if (msg && msg.type === 'request:downloadImage') {
+        const url = JSON.parse(msg.data)
+        responseMessage(msg, await urlToImage(url))
+      }
+    }
   }
 
-  function syncSelection() {
-    return new Promise(res => {
-      parent.postMessage({ pluginMessage: 'get-selection-texts' }, '*')
-      setTimeout(res, 200)
-    })
+  function urlToImage(imgUrl) {
+    return fetch(imgUrl)
+      .then(r => r.arrayBuffer())
+      .then(a => {
+        return Array.from(new Uint8Array(a))
+      })
   }
 </script>
