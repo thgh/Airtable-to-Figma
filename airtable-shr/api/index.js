@@ -1,11 +1,6 @@
-const express = require('express')
-const cors = require('cors')
 const fetch = require('node-fetch')
-const app = express()
 
-app.use(cors())
-app.use(express.static('public'))
-app.get('/api', async (req, res) => {
+module.exports = async (req, res) => {
   const url =
     req.query.url || 'https://airtable.com/shrlFq2jSymesUYW3/tblfPZxMSWxyUUpUY'
   if (!url) {
@@ -20,7 +15,7 @@ app.get('/api', async (req, res) => {
     console.error(e)
   }
   return res.json({ no: 'pe' })
-})
+}
 
 async function scrapeURL(url) {
   const html = await fetch(url).then(r => r.text())
@@ -44,7 +39,7 @@ async function getTableData(viewId, applicationId, accessPolicy) {
       serialize({
         stringifiedObjectParams: {},
         requestId: 'reqrdddddwj83Mdd',
-        accessPolicy: accessPolicy
+        accessPolicy: accessPolicy,
       })
   )
   const data = await fetch(
@@ -54,7 +49,7 @@ async function getTableData(viewId, applicationId, accessPolicy) {
       serialize({
         stringifiedObjectParams: {},
         requestId: 'reqrdddddwj83Mdd',
-        accessPolicy: accessPolicy
+        accessPolicy: accessPolicy,
       }),
     {
       credentials: 'include',
@@ -69,22 +64,17 @@ async function getTableData(viewId, applicationId, accessPolicy) {
         'x-airtable-application-id': applicationId,
         'x-requested-with': 'XMLHttpRequest',
         'x-time-zone': 'Europe/Brussels',
-        'x-user-locale': 'en'
+        'x-user-locale': 'en',
       },
       referrerPolicy: 'no-referrer',
       body: null,
       method: 'GET',
-      mode: 'cors'
+      mode: 'cors',
     }
   ).then(r => r.json())
   console.log('data', data)
   return data
 }
-
-// listen for reqs :)
-const listener = app.listen(process.env.PORT, function() {
-  console.log('Your app is listening on port ' + listener.address().port)
-})
 
 function serialize(obj) {
   const str = []

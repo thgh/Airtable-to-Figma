@@ -1,0 +1,13 @@
+{
+  "name": "airtable-shr",
+  "version": "0.1.0",
+  "description": "Read Airtable table data from shared view link",
+  "main": "api/index.js",
+  "scripts": {
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  },
+  "author": "Thomas Ghysels <info@thomasg.be>",
+  "license": "UNLICENSED"
+}
