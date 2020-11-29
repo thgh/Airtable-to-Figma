@@ -1,28 +1,29 @@
 <style>
+  #app {
+    margin: 0 8px;
+  }
   .d-inline {
     display: inline-block;
     max-width: 50px;
   }
-  .icon--button {
-    background: none;
+  .footer .button {
+    display: inline-flex;
   }
-  .icon--button:hover {
-    transform: translateZ(0);
-  }
-  .icon--selected {
-    position: relative;
-    z-index: 1000;
+  .icon-button {
+    padding: 0;
   }
   .row {
     display: block;
+    margin: 0 -8px;
     overflow: auto;
   }
   .col {
+    padding: 8px;
     float: left;
     width: 50%;
   }
   .row.field > .col {
-    padding: 8px;
+    padding: 16px;
     line-height: 18px;
   }
   .field select {
@@ -38,7 +39,7 @@
 </style>
 <link
   rel="stylesheet"
-  href="https://thomas-lowry.github.io/figma-plugin-ds/css/figma-plugin-ds.min.css"
+  href="https://unpkg.com/figma-plugin-ds@0.1.8/dist/figma-plugin-ds.css"
 />
 
 <style>
@@ -178,34 +179,40 @@
             <button
               type="button"
               @click="config.grid = ''"
-              class="icon icon--layout-grid-rows icon--button"
-              :class="{'icon--selected': !config.grid }"
-            />
+              class="icon-button"
+              :class="{'icon-button--selected': !config.grid }"
+            >
+              <div class="icon icon--layout-grid-rows"></div>
+            </button>
           </div>
           <div class="d-inline">
             <button
               type="button"
               @click="config.grid = 'columns'"
-              class="icon icon--layout-grid-columns icon--button"
-              :class="{'icon--selected': config.grid === 'columns' }"
-            />
+              class="icon-button"
+              :class="{'icon-button--selected': config.grid === 'columns' }"
+            >
+              <div class="icon icon--layout-grid-columns"></div>
+            </button>
           </div>
           <div class="d-inline">
             <button
               type="button"
               @click="config.grid = 'grid'"
-              class="icon icon--layout-grid-uniform icon--button"
-              :class="{'icon--selected': config.grid === 'grid' }"
-            />
+              class="icon-button"
+              :class="{'icon-button--selected': config.grid === 'grid' }"
+            >
+              <div class="icon icon--layout-grid-uniform"></div>
+            </button>
           </div>
         </div>
       </div>
       <div class="col" v-if="config.grid === 'grid'">
-        <label>
+        <label class="input">
           <div class="section-title">Columns</div>
           <input
             type="number"
-            class="input"
+            class="input__field"
             v-model="config.columns"
             placeholder="Default: 3"
             min="1"
@@ -217,11 +224,11 @@
 
     <div class="row">
       <div class="col">
-        <label>
+        <label class="input">
           <div class="section-title">Spacing</div>
           <input
             type="number"
-            class="input"
+            class="input__field"
             v-model="config.spacing"
             placeholder="Default: 20px"
             min="0"
@@ -230,11 +237,11 @@
         </label>
       </div>
       <div class="col">
-        <label>
+        <label class="input">
           <div class="section-title">Max items</div>
           <input
             type="number"
-            class="input"
+            class="input__field"
             v-model="config.limit"
             placeholder="Default: 100 items"
             min="1"
@@ -263,17 +270,20 @@
   <form @submit.prevent="submitURL" v-else>
     <div class="section-title">Getting started</div>
     <ol>
-      <li>Go to <a href="https://airtable.com">airtable.com</a> and build or select your own table</li>
+      <li>
+        Go to <a href="https://airtable.com">airtable.com</a> and build or
+        select your own table
+      </li>
       <li>In your Airtable of choice, click ‘Share’</li>
       <li>Scroll down and click ‘Create a shared view’</li>
       <li>Click ‘Share the current view’</li>
       <li>Next, click ‘Create a shareable grid view’.</li>
       <li>Copy the link and paste it below.</li>
     </ol>
-    <label>
+    <label class="input">
       <div class="section-title">Shared view link</div>
       <input
-        class="input"
+        class="input__field"
         type="text"
         v-model="url"
         placeholder="https://airtable.com/shr..."
@@ -560,10 +570,10 @@
   }
   function debounce(fn, wait) {
     var timeout
-    return function() {
+    return function () {
       const args = arguments
       clearTimeout(timeout)
-      timeout = setTimeout(function() {
+      timeout = setTimeout(function () {
         fn.apply(this, args)
       }, wait || 1)
     }
