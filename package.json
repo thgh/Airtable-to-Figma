@@ -1,6 +1,6 @@
 {
   "name": "figma-plugin-airtable",
-  "version": "0.1.0",
+  "version": "1.7.0",
   "description": "Load Airtable data in a component",
   "main": "code.js",
   "scripts": {
