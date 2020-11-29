@@ -14,7 +14,7 @@ const imageCache = {};
 // console.log(this, figma)
 figma.showUI(__html__, {
     width: 400,
-    height: 233,
+    height: 300,
 });
 figma.ui.onmessage = (msg) => __awaiter(this, void 0, void 0, function* () {
     const { data } = tryParse(msg);
