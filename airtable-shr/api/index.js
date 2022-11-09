@@ -19,8 +19,7 @@ module.exports = async (req, res) => {
 
 async function scrapeURL(url) {
   const html = await fetch(url).then(r => r.text())
-  const jsonStart = html.slice(html.indexOf('window.initData =') + 17)
-  let json = jsonStart.slice(0, jsonStart.indexOf('</script>') + 1).trim()
+  let json = html.split('window.initData =')[1]?.split('</script>')[0].trim()
   if (json.endsWith(';')) json = json.slice(0, -1)
   const config = JSON.parse(json)
   const policy = JSON.parse(config.accessPolicy)
