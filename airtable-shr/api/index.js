@@ -20,12 +20,10 @@ module.exports = async (req, res) => {
 const regex = /\\u([\d\w]{4})/gi;
 async function scrapeURL(url) {
   const html = await fetch(url).then(r => r.text())
-  let json = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
-  if (json.endsWith(';')) json = json.slice(0, -1)
+  let js = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
+  if (js.endsWith(';')) js = js.slice(0, -1)
   
-  const config2=eval(json)
-  console.log('config2', Object.keys(config2))
-  
+  const json = eval("`" + js + "`") 
   
   console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
   json = json.replace(regex, (match, grp) => String.fromCharCode(parseInt(grp, 16)));
