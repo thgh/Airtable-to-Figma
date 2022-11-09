@@ -1,6 +1,6 @@
 {
   "name": "airtable-shr",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read Airtable table data from shared view link",
   "main": "api/index.js",
   "scripts": {
