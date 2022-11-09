@@ -27,7 +27,11 @@ async function scrapeURL(url) {
   json = json.replace(regex, (match, grp) => String.fromCharCode(parseInt(grp, 16)));
   console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
   const config = JSON.parse(json)
+  
   console.log('config', Object.keys(config))
+
+  const config2=eval(json)
+  console.log('config2', Object.keys(config2))
   console.log('pol', config.accessPolicy)
   const policy = JSON.parse(config.accessPolicy)
   console.log('policy', policy)
