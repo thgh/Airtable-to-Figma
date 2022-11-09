@@ -23,6 +23,10 @@ async function scrapeURL(url) {
   let json = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
   if (json.endsWith(';')) json = json.slice(0, -1)
   
+  const config2=eval(json)
+  console.log('config2', Object.keys(config2))
+  
+  
   console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
   json = json.replace(regex, (match, grp) => String.fromCharCode(parseInt(grp, 16)));
   console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
@@ -30,8 +34,6 @@ async function scrapeURL(url) {
   
   console.log('config', Object.keys(config))
 
-  const config2=eval(json)
-  console.log('config2', Object.keys(config2))
   console.log('pol', config.accessPolicy)
   const policy = JSON.parse(config.accessPolicy)
   console.log('policy', policy)
