@@ -23,7 +23,7 @@ async function scrapeURL(url) {
   let js = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
   if (js.endsWith(';')) js = js.slice(0, -1)
   
-  const json = eval("`" + js + "`") 
+  let json = eval("`" + js + "`") 
   
   console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
   json = json.replace(regex, (match, grp) => String.fromCharCode(parseInt(grp, 16)));
