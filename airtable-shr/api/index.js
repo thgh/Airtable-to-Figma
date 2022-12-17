@@ -20,7 +20,8 @@ module.exports = async (req, res) => {
 const regex = /\\u([\d\w]{4})/gi;
 async function scrapeURL(url) {
   const html = await fetch(url).then(r => r.text())
-  let js = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
+  let js = html.split('window.initData =')[1]?.split('</script>')[0] || ''
+  return {len:js.length,js}
   if (js.endsWith(';')) js = js.slice(0, -1)
 
   js=atob(btoa(js))
