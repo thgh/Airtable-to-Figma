@@ -23,7 +23,9 @@ async function scrapeURL(url) {
   let js = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
   if (js.endsWith(';')) js = js.slice(0, -1)
   
-  let json = eval("`" + js + "`") 
+  console.log('original', data.length)
+  let json = (decodeURIComponent(escape(data)))
+  console.log('de-encoded', json.length)
   
   
  // console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
