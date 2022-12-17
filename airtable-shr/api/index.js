@@ -23,7 +23,23 @@ async function scrapeURL(url) {
   const html = await fetch(url).then(r => r.text())
 
   // Parse the prefetch URL
-  const start = `\\u002Fv0.3\\u002Fview\\u002F`
+
+const start = `\\u002Fv0.3\\u002Fview\\u002F`
+
+
+let optoins = html
+  .split(start)
+  .map((url) => url.split('"')[0])
+  .filter(
+    (url) =>
+      url.startsWith('viw')
+  )
+console.log('options', optoins)
+
+if (!optoins.length) {
+  return {html}
+}
+
   const url2 = html
     .split(start)
     .map((url) => url.split('"')[0])
