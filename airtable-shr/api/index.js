@@ -35,7 +35,7 @@ async function scrapeURL(url) {
   },
 }).then(r => r.text())
   let js = html.split('window.initData =')[1]?.split('</script>')[0] || ''
-  return {len:js.length,js}
+  return {html:html.length,len:js.length,js}
   if (js.endsWith(';')) js = js.slice(0, -1)
 
   js=atob(btoa(js))
