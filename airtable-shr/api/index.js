@@ -19,12 +19,12 @@ module.exports = async (req, res) => {
 
 const regex = /\\u([\d\w]{4})/gi;
 async function scrapeURL(url) {
-// Get the HTML page
+  // Get the HTML page
   const html = await fetch(url).then(r => r.text())
 
   // Parse the prefetch URL
   const start = `\\u002Fv0.3\\u002Fview\\u002F`
-  const url = html
+  const url2 = html
     .split(start)
     .map((url) => url.split('"')[0])
     .filter(
@@ -34,10 +34,10 @@ async function scrapeURL(url) {
     .map((url) => 'https://airtable.com' + (start + url).replaceAll('\\u002F', '/'))
     .pop()
 
-// Get the applicationId from that URL
-  const policy = JSON.parse(new URL(url).searchParams.get('accessPolicy'))
+  // Get the applicationId from that URL
+  const policy = JSON.parse(new URL(url2).searchParams.get('accessPolicy'))
     
-  const data = await fetch(url,
+  const data = await fetch(url2,
     {
       credentials: 'include',
       headers: {
