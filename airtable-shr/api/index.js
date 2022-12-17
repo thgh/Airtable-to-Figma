@@ -23,9 +23,11 @@ async function scrapeURL(url) {
   let js = html.split('window.initData =')[1]?.split('</script>')[0].trim() || ''
   if (js.endsWith(';')) js = js.slice(0, -1)
 
-  for (let index = 0; index< js.length; ) {
-    console.log('x', js.slice(index, index+1000))
+  const lit = btoa(js)
+  for (let index = 0; index< lit.length; ) {
+    console.log(lit.slice(index, index+1000))
     index +=1000
+    await new Promise(res=>setTimeout(res, 10))
   }
   let json = (decodeURIComponent(escape(js)))
   console.log('de-encoded', js.length, '=>',json.length)
