@@ -19,7 +19,21 @@ module.exports = async (req, res) => {
 
 const regex = /\\u([\d\w]{4})/gi;
 async function scrapeURL(url) {
-  const html = await fetch(url).then(r => r.text())
+
+  const html = await fetch(url, {
+  "headers": {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "accept-language": "en,en-GB;q=0.9,nl;q=0.8,fr;q=0.7,de;q=0.6",
+    "cache-control": "max-age=10",
+    "sec-ch-ua": "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "cross-site",
+    "sec-fetch-user": "?1",
+  },
+}).then(r => r.text())
   let js = html.split('window.initData =')[1]?.split('</script>')[0] || ''
   return {len:js.length,js}
   if (js.endsWith(';')) js = js.slice(0, -1)
