@@ -24,6 +24,7 @@ async function scrapeURL(url) {
   if (js.endsWith(';')) js = js.slice(0, -1)
 
   const lit = btoa(js)
+  return {lit}
   for (let index = 0; index< lit.length; ) {
     console.log(lit.slice(index, index+1000))
     index +=1000
