@@ -19,60 +19,25 @@ module.exports = async (req, res) => {
 
 const regex = /\\u([\d\w]{4})/gi;
 async function scrapeURL(url) {
+// Get the HTML page
+  const html = await fetch(url).then(r => r.text())
 
-  const html = await fetch(url, {
-  "headers": {
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-    "accept-language": "en,en-GB;q=0.9,nl;q=0.8,fr;q=0.7,de;q=0.6",
-    "cache-control": "max-age=10",
-    "sec-ch-ua": "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\", \"Google Chrome\";v=\"108\"",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "\"macOS\"",
-    "sec-fetch-dest": "document",
-    "sec-fetch-mode": "navigate",
-    "sec-fetch-site": "cross-site",
-    "sec-fetch-user": "?1",
-  },
-}).then(r => r.text())
-  let js = html.split('window.initData =')[1]?.split('</script>')[0] || ''
-  return {html:html.length,len:js.length,js}
-  if (js.endsWith(';')) js = js.slice(0, -1)
+  // Parse the prefetch URL
+  const start = `\\u002Fv0.3\\u002Fview\\u002F`
+  const url = html
+    .split(start)
+    .map((url) => url.split('"')[0])
+    .filter(
+      (url) =>
+        url.startsWith('viw') && url.includes('readSharedViewData?stringifi')
+    )
+    .map((url) => 'https://airtable.com' + (start + url).replaceAll('\\u002F', '/'))
+    .pop()
 
-  js=atob(btoa(js))
-  
-  const config=JSON.parse(js)
-
-  console.log('pol', config.accessPolicy)
-  const policy = JSON.parse(config.accessPolicy)
-  console.log('policy', policy)
-  return getTableData(
-    config.sharedViewId,
-    policy.applicationId,
-    config.accessPolicy
-  )
-}
-
-async function getTableData(viewId, applicationId, accessPolicy) {
-  console.log(
-    'vie',
-    'https://airtable.com/v0.3/view/' +
-      viewId +
-      '/readSharedViewData?' +
-      serialize({
-        stringifiedObjectParams: {},
-        requestId: 'reqrdddddwj83Mdd',
-        accessPolicy: accessPolicy,
-      })
-  )
-  const data = await fetch(
-    'https://airtable.com/v0.3/view/' +
-      viewId +
-      '/readSharedViewData?' +
-      serialize({
-        stringifiedObjectParams: {},
-        requestId: 'reqrdddddwj83Mdd',
-        accessPolicy: accessPolicy,
-      }),
+// Get the applicationId from that URL
+  const policy = JSON.parse(new URL(url).searchParams.get('accessPolicy'))
+    
+  const data = await fetch(url,
     {
       credentials: 'include',
       headers: {
@@ -83,7 +48,7 @@ async function getTableData(viewId, applicationId, accessPolicy) {
         pragma: 'no-cache',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
-        'x-airtable-application-id': applicationId,
+        'x-airtable-application-id': policy.applicationId,
         'x-requested-with': 'XMLHttpRequest',
         'x-time-zone': 'Europe/Brussels',
         'x-user-locale': 'en',
