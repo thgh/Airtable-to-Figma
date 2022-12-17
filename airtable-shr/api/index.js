@@ -25,7 +25,7 @@ async function scrapeURL(url) {
   
   console.log('original', btoa(js))
   let json = (decodeURIComponent(escape(js)))
-  console.log('de-encoded', json.length)
+  console.log('de-encoded', js.length, '=>',json.length)
   
   
  // console.log('json', { start: json.slice(0, 100), end: json.slice(-10) })
