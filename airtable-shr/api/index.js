@@ -35,6 +35,7 @@ async function scrapeURL(url) {
     .pop()
 
   // Get the applicationId from that URL
+  console.log('url2', url2)
   const policy = JSON.parse(new URL(url2).searchParams.get('accessPolicy'))
     
   const data = await fetch(url2,
