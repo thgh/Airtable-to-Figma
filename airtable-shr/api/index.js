@@ -66,7 +66,7 @@ async function scrapeURL(url) {
   console.log('url2', url2)
   const policy = JSON.parse(new URL(url2).searchParams.get('accessPolicy'))
     
-  const data = await fetch(url2,
+  let data = await fetch(url2,
     {
       credentials: 'include',
       headers: {
@@ -88,6 +88,10 @@ async function scrapeURL(url) {
       mode: 'cors',
     }
   ).then(r => r.json())
+  
+  if (data.data) data = data.data
+  if (data.table) data = data.table
+  
   console.log('data', data)
   return data
 }
